@@ -13,7 +13,7 @@ def get_data():
     
     try:
         df = pd.read_csv(csv_path)
-        # Cleaning like Person B: Remove empty rows and fix numeric columns
+        # Cleaning: Remove empty rows and fix numeric columns
         df = df.dropna()
         for col in ["Protein(g)", "Carbs(g)", "Fat(g)"]:
             df[col] = pd.to_numeric(df[col], errors="coerce")
@@ -27,8 +27,7 @@ def nutritional_insights(req: func.HttpRequest) -> func.HttpResponse:
     df = get_data()
     if df.empty:
         return func.HttpResponse("Error loading data", status_code=500)
-        
-    # Data for the Bar Chart: Average macros per Diet Type
+    # Data for the Bar Chart
     insights = df.groupby("Diet_type")[["Protein(g)", "Carbs(g)", "Fat(g)"]].mean().to_dict(orient="index")
     return func.HttpResponse(json.dumps(insights), mimetype="application/json")
 
@@ -37,8 +36,7 @@ def recipes(req: func.HttpRequest) -> func.HttpResponse:
     df = get_data()
     if df.empty:
         return func.HttpResponse("Error loading data", status_code=500)
-        
-    # Send back the top 50 recipes for the UI list
+    # Top 50 recipes for the UI list
     data = df[['Recipe_name', 'Diet_type', 'Cuisine_type']].head(50).to_dict(orient="records")
     return func.HttpResponse(json.dumps(data), mimetype="application/json")
 
@@ -47,7 +45,15 @@ def clusters(req: func.HttpRequest) -> func.HttpResponse:
     df = get_data()
     if df.empty:
         return func.HttpResponse("Error loading data", status_code=500)
-        
-    # Data for the Scatter Plot (Protein vs Carbs)
+    # Data for the Scatter Plot
     scatter = df[['Protein(g)', 'Carbs(g)', 'Diet_type']].to_dict(orient="records")
     return func.HttpResponse(json.dumps(scatter), mimetype="application/json")
+
+@app.route(route="heatmap")
+def heatmap(req: func.HttpRequest) -> func.HttpResponse:
+    df = get_data()
+    if df.empty:
+        return func.HttpResponse("Error loading data", status_code=500)
+    # Correlation Matrix for Person C's Heatmap
+    correlation = df[["Protein(g)", "Carbs(g)", "Fat(g)"]].corr().to_dict()
+    return func.HttpResponse(json.dumps(correlation), mimetype="application/json")
